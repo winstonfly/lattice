@@ -32,13 +32,13 @@ jobs:
         run: go test -bench=. -benchmem -count=5 ./bench/go/... | tee bench.txt
 
       - name: Store benchmark result
-        if: github.event_name == 'push' || github.event_name == 'schedule'
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: go
           output-file-path: bench.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.ref == 'refs/heads/master' }}
+          auto-push: true
           comment-on-alert: true
           alert-threshold: "150%"
           fail-on-alert: false
@@ -64,14 +64,14 @@ jobs:
         run: go test -bench=. -benchmem -count=3 -timeout=300s ./bench/docker/... | tee bench-integration.txt
 
       - name: Store integration benchmark result
-        if: github.event_name == 'push' || github.event_name == 'schedule'
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Integration Benchmarks
           tool: go
           output-file-path: bench-integration.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.ref == 'refs/heads/master' }}
+          auto-push: true
           comment-on-alert: true
           alert-threshold: "200%"
           fail-on-alert: false
