@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - master
   pull_request:
     types: [labeled, opened, synchronize, reopened]
     branches:
@@ -39,15 +41,22 @@ jobs:
 
       - name: Compute build variables
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             VERSION="${{ github.ref_name }}"
             IS_RELEASE=true
+            BUILD_LATEST=true
+          elif [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            VERSION="$(echo ${{ github.sha }} | cut -c1-7)"
+            IS_RELEASE=false
+            BUILD_LATEST=true
           else
             VERSION="pr-${{ github.event.pull_request.number }}"
             IS_RELEASE=false
+            BUILD_LATEST=false
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "IS_RELEASE=$IS_RELEASE" >> "$GITHUB_ENV"
+          echo "BUILD_LATEST=$BUILD_LATEST" >> "$GITHUB_ENV"
 
       - name: Run GoReleaser (release)
         if: env.IS_RELEASE == 'true'
@@ -60,7 +69,7 @@ jobs:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
       - name: Run GoReleaser (snapshot)
-        if: env.IS_RELEASE != 'true'
+        if: env.IS_RELEASE != 'true' && github.event_name == 'pull_request'
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
@@ -84,13 +93,10 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build and push community images
-        if: env.IS_RELEASE == 'true'
+        if: env.BUILD_LATEST == 'true'
         run: |
           for SERVICE in latticed lattice; do
-            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}"
-            if [ "$IS_RELEASE" = "true" ]; then
-              TAGS="$TAGS --tag $REGISTRY/${SERVICE}:latest"
-            fi
+            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION} --tag $REGISTRY/${SERVICE}:latest"
             docker buildx build \
               --platform linux/amd64 \
               --push \
@@ -111,23 +117,11 @@ jobs:
         if: env.IS_RELEASE == 'true'
         uses: oras-project/setup-oras@v1
 
-      - name: Publish Artifact Hub repo metadata
-        if: env.IS_RELEASE == 'true'
-        run: |
-          oras push ghcr.io/alatticeio/charts/artifacthub-repo:latest \
-            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+json \
-            deploy/charts/lattice/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and push PRO images
-        if: env.IS_RELEASE == 'true'
+        if: env.BUILD_LATEST == 'true'
         run: |
           for SERVICE in latticed lattice; do
-            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}-pro"
-            if [ "$IS_RELEASE" = "true" ]; then
-              TAGS="$TAGS --tag $REGISTRY/${SERVICE}:latest-pro"
-            fi
+            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}-pro --tag $REGISTRY/${SERVICE}:latest-pro"
             docker buildx build \
               --platform linux/amd64 \
               --push \
