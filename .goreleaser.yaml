@@ -21,6 +21,10 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
 
   # All-in-One 控制面（嵌入 NATS + SQLite，仅 linux）
   - id: "latticed"
@@ -39,6 +43,7 @@ builds:
       - linux
     goarch:
       - amd64
+      - arm64
 
 archives:
   # lattice agent 打包（面向边缘/终端用户）
