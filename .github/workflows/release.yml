@@ -21,9 +21,7 @@ env:
 
 jobs:
   release:
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ok-release'))
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,14 +90,19 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build and push community images
-        if: env.BUILD_LATEST == 'true'
+      - name: Build community images
         run: |
+          if [ "$BUILD_LATEST" = "true" ]; then
+            OUTPUT="--push"
+          else
+            OUTPUT="--output type=cacheonly"
+          fi
           for SERVICE in latticed lattice; do
-            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION} --tag $REGISTRY/${SERVICE}:latest"
+            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}"
+            [ "$BUILD_LATEST" = "true" ] && TAGS="$TAGS --tag $REGISTRY/${SERVICE}:latest"
             docker buildx build \
               --platform linux/amd64 \
-              --push \
+              $OUTPUT \
               $TAGS \
               --build-arg "TARGETSERVICE=${SERVICE}" \
               --build-arg "VERSION=${VERSION}" \
@@ -117,14 +120,19 @@ jobs:
         if: env.IS_RELEASE == 'true'
         uses: oras-project/setup-oras@v1
 
-      - name: Build and push PRO images
-        if: env.BUILD_LATEST == 'true'
+      - name: Build PRO images
         run: |
+          if [ "$BUILD_LATEST" = "true" ]; then
+            OUTPUT="--push"
+          else
+            OUTPUT="--output type=cacheonly"
+          fi
           for SERVICE in latticed lattice; do
-            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}-pro --tag $REGISTRY/${SERVICE}:latest-pro"
+            TAGS="--tag $REGISTRY/${SERVICE}:${VERSION}-pro"
+            [ "$BUILD_LATEST" = "true" ] && TAGS="$TAGS --tag $REGISTRY/${SERVICE}:latest-pro"
             docker buildx build \
               --platform linux/amd64 \
-              --push \
+              $OUTPUT \
               $TAGS \
               --build-arg "TARGETSERVICE=${SERVICE}" \
               --build-arg "VERSION=${VERSION}" \
