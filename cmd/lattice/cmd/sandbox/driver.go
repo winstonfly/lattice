@@ -35,6 +35,11 @@ type DriverConfig struct {
 	AgentBinary string   // AI agent binary inside the container
 	AgentArgs   []string // AI agent arguments
 	BundleDir   string   // writable OCI bundle dir; defaults to /tmp/lattice-runsc/<name>
+
+	// ReadyCh, if non-nil, receives a signal when the sandbox is fully ready
+	// (SOCKS5 listening, WireGuard node started). Used by sandbox run to know
+	// when to inject ALL_PROXY and exec the child process.
+	ReadyCh chan<- struct{}
 }
 
 // IsolationDriver abstracts the lifecycle of a sandbox isolation backend.

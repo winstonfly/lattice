@@ -217,6 +217,10 @@ func (d *PodDriver) Start(ctx context.Context) error {
 
 	fmt.Printf("Sandbox %q ready (pod mode), overlay IP=%s\n", cfg.SandboxName, localIP)
 
+	if cfg.ReadyCh != nil {
+		cfg.ReadyCh <- struct{}{}
+	}
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	select {
