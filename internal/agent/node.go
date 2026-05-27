@@ -60,8 +60,9 @@ func discoverNATSURLOnly(ctx context.Context, serverURL string) (string, error) 
 
 // discoveryResult holds the URLs returned by the server's /api/v1/discovery endpoint.
 type discoveryResult struct {
-	NatsURL string
-	StunURL string // empty when server does not advertise a STUN address
+	NatsURL      string
+	StunURL      string // empty when server does not advertise a STUN address
+	EnforcerMode string // server global default for enforcer mode
 }
 
 // discover fetches NATS and STUN URLs from the server's discovery endpoint.
@@ -79,8 +80,9 @@ func discover(ctx context.Context, serverURL string) (discoveryResult, error) {
 
 	var envelope struct {
 		Data struct {
-			NatsURL string `json:"nats_url"`
-			StunURL string `json:"stun_url"`
+			NatsURL      string `json:"nats_url"`
+			StunURL      string `json:"stun_url"`
+			EnforcerMode string `json:"enforcer_mode"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
@@ -90,8 +92,9 @@ func discover(ctx context.Context, serverURL string) (discoveryResult, error) {
 		return discoveryResult{}, fmt.Errorf("discovery endpoint returned empty nats_url")
 	}
 	return discoveryResult{
-		NatsURL: envelope.Data.NatsURL,
-		StunURL: envelope.Data.StunURL,
+		NatsURL:      envelope.Data.NatsURL,
+		StunURL:      envelope.Data.StunURL,
+		EnforcerMode: envelope.Data.EnforcerMode,
 	}, nil
 }
 
@@ -261,6 +264,13 @@ func NewNode(ctx context.Context, cfg *NodeConfig) (*Node, error) {
 			config.Conf.TurnServerURL = d.StunURL
 			log.GetLogger("node").Info("Discovered STUN URL", "url", d.StunURL)
 		}
+		// Apply server global enforcer_mode default if CLI hasn't overridden it.
+		if config.Conf.EnforcerMode == "" || config.Conf.EnforcerMode == "auto" {
+			if d.EnforcerMode != "" {
+				config.Conf.EnforcerMode = d.EnforcerMode
+				log.GetLogger("node").Info("Discovered enforcer mode", "mode", d.EnforcerMode)
+			}
+		}
 	}
 
 	// NATS signal service: exchanges ICE signaling messages (SYN/ACK/Offer/Answer)
@@ -411,7 +421,7 @@ func NewNode(ctx context.Context, cfg *NodeConfig) (*Node, error) {
 	if cfg.ProvisionerFactory != nil {
 		node.provisioner = cfg.ProvisionerFactory(node.iface)
 	} else {
-		enforcerMode := provision.SelectEnforcerMode(cfg.Logger)
+		enforcerMode := provision.SelectEnforcerMode(cfg.Flags, cfg.Logger)
 		var policyEnforcer provision.PolicyEnforcer
 		switch enforcerMode {
 		case provision.ModeEBPF:
