@@ -6,6 +6,7 @@ import (
 
 const (
 	ConfigKeyNatsURL = "nats_url"
+	ConfigKeyStunURL = "stun_url"
 )
 
 type SystemConfig struct {

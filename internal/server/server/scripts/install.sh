@@ -115,7 +115,6 @@ fi
 
 if [ "${SKIP_INSTALL:-false}" = "false" ]; then
   echo "Downloading Lattice ${LATTICE_VERSION} for ${OS}/${ARCH}..."
-  echo "  URL: ${DOWNLOAD_URL}"
   if ! curl -fL --progress-bar --connect-timeout 30 -o "${TMP_DIR}/${ARCHIVE_NAME}" "$DOWNLOAD_URL"; then
     echo "Download failed from ${DOWNLOAD_URL}"
     echo "Check available releases at: ${GITHUB_RELEASES}"
