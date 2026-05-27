@@ -102,19 +102,27 @@ function reset() {
   launch()
 }
 
+function execCopy(text: string) {
+  const el = document.createElement('textarea')
+  el.value = text
+  el.setAttribute('readonly', '')
+  el.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;opacity:0;pointer-events:none'
+  document.body.appendChild(el)
+  el.focus()
+  el.select()
+  try { document.execCommand('copy') } catch { /* ignore */ }
+  document.body.removeChild(el)
+}
+
 async function copy(text: string, which: 1 | 2) {
-  // clipboard API requires HTTPS; fall back to execCommand for HTTP
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    const el = Object.assign(document.createElement('textarea'), {
-      value: text,
-      style: 'position:fixed;opacity:0',
-    })
-    document.body.appendChild(el)
-    el.select()
-    document.execCommand('copy')
-    document.body.removeChild(el)
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      execCopy(text)
+    }
+  } else {
+    execCopy(text)
   }
   if (which === 1) { copied1.value = true; setTimeout(() => { copied1.value = false }, 2000) }
   else             { copied2.value = true; setTimeout(() => { copied2.value = false }, 2000) }
