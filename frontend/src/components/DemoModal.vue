@@ -120,6 +120,10 @@ async function copy(text: string, which: 1 | 2) {
   else             { copied2.value = true; setTimeout(() => { copied2.value = false }, 2000) }
 }
 
+function openConsole() {
+  if (session.value?.console_url) window.open(session.value.console_url, '_blank')
+}
+
 watch(openModel, (v) => { if (v) launch() })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
@@ -243,7 +247,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
               v-if="session.console_url"
               size="sm"
               class="gap-1.5 h-8 text-xs"
-              @click="() => window.open(session!.console_url, '_blank')"
+              @click="openConsole"
             >
               <ExternalLink class="size-3.5" /> Open Console
             </Button>
