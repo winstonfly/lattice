@@ -34,3 +34,17 @@ func TestAgentCmd_RunSubcommandRegistered(t *testing.T) {
 		t.Error("expected 'run' subcommand to be registered on agent command")
 	}
 }
+
+func TestAgentCmd_SidecarSubcommandRegistered(t *testing.T) {
+	cmd := agent.AgentCmd()
+	found := false
+	for _, sub := range cmd.Commands() {
+		if sub.Use == "sidecar" || strings.HasPrefix(sub.Use, "sidecar ") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'sidecar' subcommand to be registered on agent command")
+	}
+}
