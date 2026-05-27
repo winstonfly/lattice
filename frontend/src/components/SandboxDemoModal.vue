@@ -81,7 +81,7 @@ const presets: { value: Preset; label: string; suffix: string }[] = [
 
 const runCmd = computed(() => {
   if (!session.value) return ''
-  const p = presets.find(x => x.value === preset.value)!
+  const p = presets.find(x => x.value === preset.value) ?? presets[0]
   return `lattice sandbox run --name demo-agent --server-url ${session.value.server_url} --token ${session.value.token} ${p.suffix}`
 })
 
@@ -158,7 +158,13 @@ function openConsole() {
   if (session.value?.console_url) window.open(session.value.console_url, '_blank')
 }
 
-watch(openModel, (v) => { if (v) launch() })
+watch(openModel, (v) => {
+  if (v) {
+    launch()
+  } else {
+    if (timer) { clearInterval(timer); timer = null }
+  }
+})
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 

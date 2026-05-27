@@ -132,7 +132,13 @@ function openConsole() {
   if (session.value?.console_url) window.open(session.value.console_url, '_blank')
 }
 
-watch(openModel, (v) => { if (v) launch() })
+watch(openModel, (v) => {
+  if (v) {
+    launch()
+  } else {
+    if (timer) { clearInterval(timer); timer = null }
+  }
+})
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 
