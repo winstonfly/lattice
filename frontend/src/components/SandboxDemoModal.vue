@@ -18,6 +18,7 @@ const openModel = defineModel<boolean>('open')
 
 type State = 'loading' | 'ready' | 'expired' | 'error'
 type Preset = 'claude' | 'python3' | 'curl'
+type SandboxMode = 'pod' | 'gvisor'
 
 const state = ref<State>('loading')
 const session = ref<SandboxDemoSession | null>(null)
@@ -27,6 +28,7 @@ const remainingMs = ref(0)
 const copiedInstall = ref(false)
 const copiedRun = ref(false)
 const preset = ref<Preset>('claude')
+const sandboxMode = ref<SandboxMode>('pod')
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -82,7 +84,10 @@ const presets: { value: Preset; label: string; suffix: string }[] = [
 const runCmd = computed(() => {
   if (!session.value) return ''
   const p = presets.find(x => x.value === preset.value) ?? presets[0]
-  return `lattice sandbox run --name demo-agent --server-url ${session.value.server_url} --token ${session.value.token} ${p.suffix}`
+  const modeFlags = sandboxMode.value === 'gvisor'
+    ? '--mode gvisor --agent-rootfs /var/lib/lattice/rootfs '
+    : ''
+  return `lattice sandbox run --name demo-agent --server-url ${session.value.server_url} --token ${session.value.token} ${modeFlags}${p.suffix}`
 })
 
 async function launch() {
@@ -267,16 +272,34 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
                 <span class="flex items-center justify-center size-5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">2</span>
                 <span class="text-sm font-medium">Run your agent</span>
               </div>
-              <!-- Preset toggle (segmented button group) -->
-              <div class="flex rounded-md border border-input overflow-hidden text-xs font-mono">
-                <button
-                  v-for="p in presets"
-                  :key="p.value"
-                  type="button"
-                  :class="preset === p.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'"
-                  class="px-2 py-0.5 border-l border-input first:border-l-0 transition-colors"
-                  @click="preset = p.value"
-                >{{ p.label }}</button>
+              <!-- Mode + Preset toggles -->
+              <div class="flex items-center gap-1.5">
+                <!-- Isolation mode toggle -->
+                <div class="flex rounded-md border border-input overflow-hidden text-[11px] font-mono">
+                  <button
+                    type="button"
+                    :class="sandboxMode === 'pod' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'"
+                    class="px-2 py-0.5 transition-colors"
+                    @click="sandboxMode = 'pod'"
+                  >pod</button>
+                  <button
+                    type="button"
+                    :class="sandboxMode === 'gvisor' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'"
+                    class="px-2 py-0.5 border-l border-input transition-colors"
+                    @click="sandboxMode = 'gvisor'"
+                  >gvisor</button>
+                </div>
+                <!-- Preset toggle (segmented button group) -->
+                <div class="flex rounded-md border border-input overflow-hidden text-xs font-mono">
+                  <button
+                    v-for="p in presets"
+                    :key="p.value"
+                    type="button"
+                    :class="preset === p.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'"
+                    class="px-2 py-0.5 border-l border-input first:border-l-0 transition-colors"
+                    @click="preset = p.value"
+                  >{{ p.label }}</button>
+                </div>
               </div>
             </div>
             <div class="group relative rounded-lg bg-zinc-950 dark:bg-zinc-900 border border-zinc-800 px-4 py-3 pr-12">

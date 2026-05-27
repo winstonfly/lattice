@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
 	"time"
 
@@ -83,10 +84,22 @@ Examples:
 	cmd.Flags().IntVar(&sandboxWgPort, "wg-port", 0,
 		"WireGuard UDP listen port (0 = random, use when port 51820 is already in use)")
 
+	cmd.Flags().StringVar(&sandboxMode, "mode", "pod", "Isolation mode: pod | gvisor")
+	cmd.Flags().StringVar(&sandboxAgentRootFS, "agent-rootfs", "", "Root filesystem path for runsc container (gvisor mode)")
+	cmd.Flags().StringVar(&sandboxAgentBinary, "agent-binary", "", "Agent entrypoint binary (gvisor mode)")
+	cmd.Flags().StringSliceVar(&sandboxAgentArgs, "agent-args", nil, "Agent entrypoint arguments (gvisor mode)")
+
 	return cmd
 }
 
 func runRun(_ *cobra.Command, args []string) error {
+	if sandboxMode == "gvisor" {
+		return runRunGVisor(args)
+	}
+	return runRunPod(args)
+}
+
+func runRunPod(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing command: use -- <command> [args...], e.g.: lattice sandbox run ... -- python agent.py")
 	}
@@ -195,4 +208,43 @@ func runRun(_ *cobra.Command, args []string) error {
 		os.Exit(exitErr.ExitCode())
 	}
 	return childErr
+}
+
+func runRunGVisor(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("missing command: use -- <command> [args...]")
+	}
+
+	cfg := DriverConfig{
+		SandboxName: sandboxName,
+		ServerURL:   sandboxServerURL,
+		Token:       sandboxToken,
+		RootFS:      sandboxAgentRootFS,
+		AgentBinary: sandboxAgentBinary,
+		AgentArgs:   sandboxAgentArgs,
+	}
+
+	// If --agent-binary not set, use the first arg as the agent binary.
+	if cfg.AgentBinary == "" {
+		cfg.AgentBinary = args[0]
+		cfg.AgentArgs = args[1:]
+	}
+
+	if err := validateDriverConfig("gvisor", cfg); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
+
+	driver := NewRunscDriver(cfg)
+	fmt.Printf("Starting sandbox %q in gvisor mode...\n", sandboxName)
+	return driver.Start(ctx)
 }
