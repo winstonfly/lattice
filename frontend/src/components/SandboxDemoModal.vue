@@ -132,11 +132,13 @@ function execCopy(text: string) {
   el.value = text
   el.setAttribute('readonly', '')
   el.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;opacity:0;pointer-events:none'
-  document.body.appendChild(el)
+  // Append inside the dialog so Radix focus trap doesn't steal focus back
+  const container = document.querySelector('[role="dialog"]') ?? document.body
+  container.appendChild(el)
   el.focus()
   el.select()
   try { document.execCommand('copy') } catch { /* ignore */ }
-  document.body.removeChild(el)
+  container.removeChild(el)
 }
 
 async function copy(text: string, which: 'install' | 'run') {
@@ -174,20 +176,19 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 
       <!-- Header -->
       <div class="px-6 pt-6 pb-5 border-b border-border">
-        <div class="flex items-start justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-              <Container class="size-4 text-primary" />
-            </div>
-            <div>
-              <h2 class="text-base font-semibold leading-none">Try Sandbox</h2>
-              <p class="text-xs text-muted-foreground mt-1">Run an AI agent in an isolated network sandbox</p>
-            </div>
+        <div class="flex items-center gap-2.5 pr-8">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+            <Container class="size-4 text-primary" />
           </div>
-          <div v-if="state === 'ready'" class="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-mono font-medium" :class="timerClass">
-            <span class="size-1.5 rounded-full bg-current animate-pulse" />
-            {{ timeLeft }}
+          <div>
+            <h2 class="text-base font-semibold leading-none">Try Sandbox</h2>
+            <p class="text-xs text-muted-foreground mt-1">Run an AI agent in an isolated network sandbox</p>
           </div>
+        </div>
+        <!-- Timer badge -->
+        <div v-if="state === 'ready'" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-mono font-medium" :class="timerClass">
+          <span class="size-1.5 rounded-full bg-current animate-pulse" />
+          {{ timeLeft }}
         </div>
       </div>
 

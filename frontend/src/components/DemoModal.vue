@@ -107,11 +107,13 @@ function execCopy(text: string) {
   el.value = text
   el.setAttribute('readonly', '')
   el.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;opacity:0;pointer-events:none'
-  document.body.appendChild(el)
+  // Append inside the dialog so Radix focus trap doesn't steal focus back
+  const container = document.querySelector('[role="dialog"]') ?? document.body
+  container.appendChild(el)
   el.focus()
   el.select()
   try { document.execCommand('copy') } catch { /* ignore */ }
-  document.body.removeChild(el)
+  container.removeChild(el)
 }
 
 async function copy(text: string, which: 1 | 2) {
