@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package agent
+package sandbox
 
 import "github.com/spf13/cobra"
 
-func addRunCmd(parent *cobra.Command) {}
+func addSidecarCmd(parent *cobra.Command) {}

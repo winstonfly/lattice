@@ -12,25 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package agent
+package sandbox
 
 import "github.com/spf13/cobra"
 
-// AgentCmd returns the top-level `agent` cobra command.
-func AgentCmd() *cobra.Command {
+// SandboxCmd returns the top-level `sandbox` cobra command.
+func SandboxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "agent",
+		Use:   "sandbox",
 		Short: "Manage AI agent sandboxes",
-		Long: `The agent commands start and configure AI agent sandboxes on the
+		Long: `The sandbox commands start and configure AI agent sandboxes on the
 Lattice overlay network.
 
 All sandbox traffic flows through a gVisor userspace network stack — no kernel
 WireGuard interface (wg0) is created on the host.
 
 Scenarios:
-  agent run    — single container, requires --runtime=runsc (or equivalent)
-  agent sidecar — Kubernetes sidecar with transparent proxy
-  agent init   — Kubernetes init container, writes iptables rules and exits`,
+  sandbox run    — single container, requires --runtime=runsc (or equivalent)
+  sandbox sidecar — Kubernetes sidecar with transparent proxy
+  sandbox init   — Kubernetes init container, writes iptables rules and exits`,
 	}
 	addRunCmd(cmd)
 	addSidecarCmd(cmd)

@@ -1,4 +1,4 @@
-//go:build pro && !linux
+//go:build !linux
 
 // Copyright 2026 The Lattice Authors, Inc.
 //
@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package agent
+package sandbox
 
 import "github.com/spf13/cobra"
 
-func addSidecarCmd(parent *cobra.Command) {}
+func addInitCmd(parent *cobra.Command) {}

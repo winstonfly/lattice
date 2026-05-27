@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package agent_test
+package sandbox_test
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/alatticeio/lattice/cmd/lattice/cmd/agent"
+	"github.com/alatticeio/lattice/cmd/lattice/cmd/sandbox"
 )
 
-func TestAgentCmd_RunSubcommandRegistered(t *testing.T) {
-	cmd := agent.AgentCmd()
+func TestSandboxCmd_RunSubcommandRegistered(t *testing.T) {
+	cmd := sandbox.SandboxCmd()
 	found := false
 	for _, sub := range cmd.Commands() {
 		if sub.Use == "run" || strings.HasPrefix(sub.Use, "run ") {
@@ -31,12 +31,12 @@ func TestAgentCmd_RunSubcommandRegistered(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("expected 'run' subcommand to be registered on agent command")
+		t.Error("expected 'run' subcommand to be registered on sandbox command")
 	}
 }
 
-func TestAgentCmd_SidecarSubcommandRegistered(t *testing.T) {
-	cmd := agent.AgentCmd()
+func TestSandboxCmd_SidecarSubcommandRegistered(t *testing.T) {
+	cmd := sandbox.SandboxCmd()
 	found := false
 	for _, sub := range cmd.Commands() {
 		if sub.Use == "sidecar" || strings.HasPrefix(sub.Use, "sidecar ") {
@@ -45,6 +45,6 @@ func TestAgentCmd_SidecarSubcommandRegistered(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("expected 'sidecar' subcommand to be registered on agent command")
+		t.Error("expected 'sidecar' subcommand to be registered on sandbox command")
 	}
 }

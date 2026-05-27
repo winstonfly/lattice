@@ -1,4 +1,4 @@
-//go:build !pro
+//go:build pro && linux
 
 // Copyright 2026 The Lattice Authors, Inc.
 //
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package agent
+package sandbox
 
 import (
 	"context"
@@ -37,9 +37,11 @@ import (
 )
 
 var (
-	runServerURL string
-	runToken     string
-	runReadyWait time.Duration
+	runServerURL   string
+	runToken       string
+	runReadyWait   time.Duration
+	runEgressAllow string
+	runEgressDeny  bool
 )
 
 func addRunCmd(parent *cobra.Command) {
@@ -49,19 +51,17 @@ func addRunCmd(parent *cobra.Command) {
 func runCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <name> -- <command> [args...]",
-		Short: "Run an AI agent inside a gVisor sandbox",
+		Short: "Run an AI agent inside a gVisor sandbox (Pro)",
 		Long: `Run registers a sandbox with the Lattice control plane, starts a WireGuard
-node, then forks the given command as a child process. The container must run
-under gVisor (--runtime=runsc or runtimeClassName: gvisor) so that the AI
-agent's traffic is intercepted by gVisor's userspace netstack and routed
-through the WireGuard overlay. No kernel wg0 is created on the host.
+node, optionally applies egress policy via iptables inside the gVisor container,
+then forks the given command.
 
-The sandbox name is the first positional argument. Everything after '--' is the
-command to execute.
+The container must run under gVisor (--runtime=runsc or runtimeClassName: gvisor).
 
 Example:
   docker run --runtime=runsc ghcr.io/alattice/lattice \
     agent run my-agent --server-url http://latticed:8080 --token lt-xxx \
+    --egress-allow 10.0.0.0/8 --egress-default-deny \
     -- python agent.py`,
 		Args: cobra.ArbitraryArgs,
 		RunE: runRun,
@@ -70,6 +70,10 @@ Example:
 	cmd.Flags().StringVar(&runToken, "token", "", "Enrollment token (required)")
 	cmd.Flags().DurationVar(&runReadyWait, "ready-wait", 3*time.Second,
 		"Time to wait for WireGuard peer sessions before starting the AI agent")
+	cmd.Flags().StringVar(&runEgressAllow, "egress-allow", "",
+		"Comma-separated overlay CIDRs the AI agent is allowed to reach (Pro)")
+	cmd.Flags().BoolVar(&runEgressDeny, "egress-default-deny", false,
+		"Deny all egress except --egress-allow CIDRs (Pro)")
 	_ = cmd.MarkFlagRequired("server-url")
 	_ = cmd.MarkFlagRequired("token")
 	return cmd
@@ -82,6 +86,12 @@ func runRun(_ *cobra.Command, args []string) error {
 	agentName := args[0]
 	cmdArgs := args[1:]
 
+	if runEgressDeny {
+		if _, err := parseEgressCIDRs(runEgressAllow); err != nil {
+			return err
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -89,8 +99,6 @@ func runRun(_ *cobra.Command, args []string) error {
 	agentconfig.Conf.ServerUrl = runServerURL
 	agentconfig.Conf.WgPort = 51820
 
-	// gVisor's devtmpfs may not auto-create /dev/net/ — create it so
-	// wireguard-go can open /dev/net/tun (virtualised by gVisor runtime).
 	_ = os.MkdirAll("/dev/net", 0o755)
 
 	currentPeer, err := registerOrResume(ctx, agentName, runServerURL, runToken)
@@ -140,11 +148,17 @@ func runRun(_ *cobra.Command, args []string) error {
 	go node.StartHeartbeat(ctx)
 	go runPeriodicRefresh(ctx, node, logger)
 
-	// Wait for WireGuard peer sessions to establish.
 	select {
 	case <-time.After(runReadyWait):
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+
+	if runEgressDeny {
+		cidrs, _ := parseEgressCIDRs(runEgressAllow) // already validated above
+		if err := applyEgressIPTables(cidrs); err != nil {
+			return fmt.Errorf("apply egress iptables: %w", err)
+		}
 	}
 
 	return forkAndWait(ctx, cancel, cmdArgs)
@@ -236,10 +250,7 @@ func forkAndWait(ctx context.Context, cancel context.CancelFunc, cmdArgs []strin
 	return childErr
 }
 
-// parseEgressCIDRs splits a comma-separated CIDR string and validates each entry.
-// Returns the list of validated CIDR strings, or an error.
-//
-//nolint:unused
+// parseEgressCIDRs splits and validates a comma-separated CIDR string.
 func parseEgressCIDRs(raw string) ([]string, error) {
 	if raw == "" {
 		return nil, nil
@@ -256,4 +267,30 @@ func parseEgressCIDRs(raw string) ([]string, error) {
 		out = append(out, entry)
 	}
 	return out, nil
+}
+
+// applyEgressIPTables installs iptables rules inside the gVisor container to
+// restrict egress traffic on the overlay. gVisor virtualises iptables, so
+// these rules apply to gVisor's netstack.
+func applyEgressIPTables(allowCIDRs []string) error {
+	rules := [][]string{
+		// Allow established/related connections.
+		{"-A", "OUTPUT", "-m", "conntrack", "--ctstate", "ESTABLISHED,RELATED", "-j", "ACCEPT"},
+		// Allow loopback.
+		{"-A", "OUTPUT", "-o", "lo", "-j", "ACCEPT"},
+		// Allow WireGuard encrypted UDP (to peer endpoints).
+		{"-A", "OUTPUT", "-p", "udp", "-j", "ACCEPT"},
+	}
+	for _, cidr := range allowCIDRs {
+		rules = append(rules, []string{"-A", "OUTPUT", "-d", cidr, "-j", "ACCEPT"})
+	}
+	rules = append(rules, []string{"-P", "OUTPUT", "DROP"})
+
+	for _, args := range rules {
+		out, err := exec.Command("iptables", args...).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("iptables %v: %s: %w", args, out, err)
+		}
+	}
+	return nil
 }
