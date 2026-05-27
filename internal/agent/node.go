@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/alatticeio/lattice/internal"
 	"github.com/alatticeio/lattice/internal/agent/config"
 	"github.com/alatticeio/lattice/internal/agent/infra"
@@ -31,10 +33,11 @@ import (
 	ctrclient "github.com/alatticeio/lattice/internal/server/client"
 	"github.com/alatticeio/lattice/internal/server/nats"
 	"github.com/alatticeio/lattice/internal/server/transport"
-	"github.com/alatticeio/lattice/pkg/utils"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/alatticeio/lattice/pkg/utils"
 
 	wg "golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun"
@@ -340,6 +343,9 @@ func NewNode(ctx context.Context, cfg *NodeConfig) (*Node, error) {
 		},
 		GetLrp: func() infra.Lrp {
 			return lrp
+		},
+		GetHandshake: func(pubKey string) (time.Time, error) {
+			return wireguard.PeerHandshake(config.Conf.InterfaceName, pubKey)
 		},
 	})
 
