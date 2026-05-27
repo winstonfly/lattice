@@ -341,9 +341,16 @@ func (s *Server) handleDiscovery() gin.HandlerFunc {
 			stunURL = dbStun
 		}
 
+		// Enforcer mode: server global default from config.
+		enforcerMode := s.cfg.EnforcerMode
+		if enforcerMode == "" {
+			enforcerMode = "auto"
+		}
+
 		resp.OK(c, gin.H{
-			"nats_url": natsURL,
-			"stun_url": stunURL,
+			"nats_url":      natsURL,
+			"stun_url":      stunURL,
+			"enforcer_mode": enforcerMode,
 		})
 	}
 }
