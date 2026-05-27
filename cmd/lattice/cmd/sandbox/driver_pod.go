@@ -72,7 +72,7 @@ func (d *PodDriver) Start(ctx context.Context) error {
 
 	agentconfig.Conf.AppId = cfg.SandboxName
 	agentconfig.Conf.ServerUrl = cfg.ServerURL
-	agentconfig.Conf.WgPort = 51820
+	agentconfig.Conf.WgPort = cfg.WgPort
 
 	var privKey wgtypes.Key
 	var currentPeer *infra.Peer
@@ -144,7 +144,7 @@ func (d *PodDriver) Start(ctx context.Context) error {
 	agentJWT := currentPeer.Token
 	nodeCfg := &agent.NodeConfig{
 		Logger:      logger,
-		Port:        51820,
+		Port:        cfg.WgPort,
 		ShowLog:     false,
 		Flags:       agentconfig.Conf,
 		CustomTUN:   tunDev,

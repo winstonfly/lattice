@@ -80,6 +80,8 @@ Examples:
 	cmd.Flags().StringArrayVar(&sandboxForwardRules, "forward", nil, "Inbound forward rule: overlayPort:targetAddr")
 	cmd.Flags().DurationVar(&sandboxRunReadyTimeout, "ready-timeout", 30*time.Second,
 		"Maximum time to wait for sandbox to be ready")
+	cmd.Flags().IntVar(&sandboxWgPort, "wg-port", 0,
+		"WireGuard UDP listen port (0 = random, use when port 51820 is already in use)")
 
 	return cmd
 }
@@ -110,6 +112,7 @@ func runRun(_ *cobra.Command, args []string) error {
 		EgressAllow:  sandboxEgressAllow,
 		EgressDeny:   sandboxEgressDeny,
 		ForwardRules: sandboxForwardRules,
+		WgPort:       sandboxWgPort,
 		ReadyCh:      readyCh,
 	}
 
