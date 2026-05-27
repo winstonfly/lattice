@@ -607,7 +607,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("auth-token", "")
 	v.SetDefault("server-url", "")
 
-	v.SetDefault("stun-url", "stun.alattice.io:3478")
+	v.SetDefault("stun-url", "") // empty: use discovered value from server, or fall back in stunURIs()
 	v.SetDefault("relay-url", ":6266")
 	v.SetDefault("relay-quic-url", "")
 	v.SetDefault("port", 3478)
