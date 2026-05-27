@@ -10,7 +10,8 @@ type UserSettingsResponse struct {
 	Bio         string `json:"bio"`         // Maps to UserProfile.Bio
 	Timezone    string `json:"timezone"`    // Maps to UserProfile.Timezone
 	Language    string `json:"language"`    // Maps to UserProfile.Language
-	EmailNotify bool   `json:"emailNotify"` // Maps to UserProfile.EmailNotify
+	EmailNotify  bool   `json:"emailNotify"`               // Maps to UserProfile.EmailNotify
+	EnforcerMode string `json:"enforcerMode"`              // "auto", "iptables", "ebpf"
 }
 
 // UpdateSettingsRequest receives the update structure from the frontend
@@ -25,6 +26,7 @@ type UpdateSettingsRequest struct {
 	Company     string `json:"company"`
 	Bio         string `json:"bio"`
 	Timezone    string `json:"timezone"`
-	Language    string `json:"language"`
-	EmailNotify bool   `json:"emailNotify"`
+	Language     string `json:"language"`
+	EmailNotify  bool   `json:"emailNotify"`
+	EnforcerMode string `json:"enforcerMode"`
 }

@@ -31,8 +31,9 @@ type UserProfile struct {
 	Company     string `gorm:"size:128" json:"company"`
 	Bio         string `gorm:"type:text" json:"bio"`
 	Timezone    string `gorm:"size:64;default:'Asia/Shanghai'" json:"timezone"`
-	Language    string `gorm:"size:16;default:'zh-CN'" json:"language"`
-	EmailNotify bool   `gorm:"default:true" json:"emailNotify"`
+	Language     string `gorm:"size:16;default:'zh-CN'" json:"language"`
+	EmailNotify  bool   `gorm:"default:true" json:"emailNotify"`
+	EnforcerMode string `gorm:"size:16;default:'auto'" json:"enforcerMode"`
 }
 
 func (UserProfile) TableName() string {
