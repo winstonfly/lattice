@@ -313,6 +313,17 @@ func NewNode(ctx context.Context, cfg *NodeConfig) (*Node, error) {
 		}
 	}
 
+	// Apply user personal enforcer_mode from registration response.
+	// Overrides discovery default.
+	if node.current.EnforcerMode != "" {
+		config.Conf.EnforcerMode = node.current.EnforcerMode
+		log.GetLogger("node").Info("Enforcer mode from user setting", "mode", node.current.EnforcerMode)
+	}
+	// Ensure non-empty before selector runs.
+	if config.Conf.EnforcerMode == "" {
+		config.Conf.EnforcerMode = "auto"
+	}
+
 	privateKey, err = utils.ParseKey(node.current.PrivateKey)
 	if err != nil {
 		return nil, err
