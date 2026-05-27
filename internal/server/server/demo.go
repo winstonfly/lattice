@@ -52,6 +52,16 @@ type demoLaunchResponse struct {
 	ConsoleURL  string    `json:"console_url"`
 }
 
+// sandboxLaunchResponse is returned by POST /api/v1/demo/sandbox/launch.
+type sandboxLaunchResponse struct {
+	WorkspaceID string    `json:"workspace_id"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	ServerURL   string    `json:"server_url"`
+	Token       string    `json:"token"`
+	InstallCmd  string    `json:"install_cmd"`
+	ConsoleURL  string    `json:"console_url"`
+}
+
 // demoConfigDefaults holds resolved demo configuration with defaults applied.
 type demoConfigDefaults struct {
 	Enabled          bool
@@ -65,6 +75,10 @@ func (s *Server) demoRouter() {
 	s.POST("/api/v1/demo/launch",
 		s.demoLimiter.Middleware(rate.Limit(s.demoCfg().RateLimitPerHour)/3600, 1),
 		s.handleDemoLaunch(),
+	)
+	s.POST("/api/v1/demo/sandbox/launch",
+		s.demoLimiter.Middleware(rate.Limit(s.demoCfg().RateLimitPerHour)/3600, 1),
+		s.handleSandboxDemoLaunch(),
 	)
 }
 
@@ -251,6 +265,172 @@ func (s *Server) handleDemoLaunch() gin.HandlerFunc {
 			ExpiresAt:   expiresAt,
 			Device1Cmd:  cmd,
 			Device2Cmd:  cmd,
+			ConsoleURL:  consoleURL,
+		})
+	}
+}
+
+func (s *Server) handleSandboxDemoLaunch() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cfg := s.demoCfg()
+		if !cfg.Enabled {
+			c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "demo is disabled"})
+			return
+		}
+
+		ctx := c.Request.Context()
+		ttl := time.Duration(cfg.TTLMinutes) * time.Minute
+		expiresAt := time.Now().Add(ttl)
+
+		// 1. Create workspace
+		slug := fmt.Sprintf("sandbox-demo-%d", time.Now().UnixMilli())
+		wsVo, err := s.workspaceController.AddWorkspace(ctx, &dto.WorkspaceDto{
+			Slug:        slug,
+			DisplayName: "Sandbox Demo Workspace",
+		})
+		if err != nil {
+			resp.Error(c, "failed to create sandbox demo workspace: "+err.Error())
+			return
+		}
+		rollback := func() { _ = s.workspaceController.DeleteWorkspace(context.Background(), wsVo.ID) }
+
+		// 2. Mark workspace as demo with expiry
+		ws, err := s.store.Workspaces().GetByID(ctx, wsVo.ID)
+		if err != nil {
+			rollback()
+			resp.Error(c, "failed to fetch workspace: "+err.Error())
+			return
+		}
+		ws.IsDemo = true
+		ws.ExpiresAt = &expiresAt
+		if err = s.store.Workspaces().Update(ctx, ws); err != nil {
+			rollback()
+			resp.Error(c, "failed to mark sandbox demo workspace: "+err.Error())
+			return
+		}
+
+		// 3. Create enrollment token (limit=1, one sandbox agent)
+		tokenCtx := context.WithValue(ctx, infra.WorkspaceKey, wsVo.ID)
+		expiry := fmt.Sprintf("%dm", cfg.TTLMinutes)
+		tokenStr, err := s.tokenController.Create(tokenCtx, &dto.TokenDto{
+			Namespace: wsVo.Namespace,
+			Limit:     1,
+			Expiry:    expiry,
+		})
+		if err != nil {
+			rollback()
+			resp.Error(c, "failed to create enrollment token: "+err.Error())
+			return
+		}
+
+		// 4. Apply allow-all policy
+		const demoNetwork = "lattice-default-net"
+		networkLabel := fmt.Sprintf("alattice.io/network-%s", demoNetwork)
+		peerSel := metav1.LabelSelector{
+			MatchLabels: map[string]string{networkLabel: "true"},
+		}
+		if _, policyErr := s.policyController.ApplyDirect(tokenCtx, wsVo.ID, "", "", &dto.PolicyDto{
+			Name:        "demo-allow-all",
+			Action:      "Allow",
+			PolicyTypes: []string{"Ingress", "Egress"},
+			LatticePolicySpec: v1alpha1.LatticePolicySpec{
+				Network:      demoNetwork,
+				PeerSelector: peerSel,
+				Action:       "ALLOW",
+				Ingress: []v1alpha1.IngressRule{
+					{From: []v1alpha1.PeerSelection{{PeerSelector: &peerSel}}},
+				},
+				Egress: []v1alpha1.EgressRule{
+					{To: []v1alpha1.PeerSelection{{PeerSelector: &peerSel}}},
+				},
+			},
+		}); policyErr != nil {
+			s.logger.Warn("sandbox demo: failed to apply allow-all policy (non-fatal)", "err", policyErr)
+		}
+
+		// 5. Create demo user
+		rawBytes := make([]byte, 16)
+		if err = utils.GenerateRandomBytes(rawBytes); err != nil {
+			rollback()
+			resp.Error(c, "failed to generate demo credentials: "+err.Error())
+			return
+		}
+		randSuffix := base64.RawURLEncoding.EncodeToString(rawBytes)[:12]
+		demoUsername := fmt.Sprintf("demo-%s", randSuffix)
+		demoPassword := base64.RawURLEncoding.EncodeToString(rawBytes)
+
+		if err = s.userController.Register(ctx, dto.UserDto{
+			Username: demoUsername,
+			Password: demoPassword,
+		}); err != nil {
+			rollback()
+			resp.Error(c, "failed to create demo user: "+err.Error())
+			return
+		}
+
+		demoUser, err := s.userController.Login(ctx, demoUsername, demoPassword)
+		if err != nil {
+			rollback()
+			resp.Error(c, "failed to authenticate demo user: "+err.Error())
+			return
+		}
+
+		if err = s.memberController.Add(ctx, wsVo.ID, demoUser.ID, dto.RoleAdmin); err != nil {
+			rollback()
+			resp.Error(c, "failed to add demo user to workspace: "+err.Error())
+			return
+		}
+
+		// 6. Issue magic token
+		magicRaw := make([]byte, 32)
+		if err = utils.GenerateRandomBytes(magicRaw); err != nil {
+			rollback()
+			resp.Error(c, "failed to generate magic token: "+err.Error())
+			return
+		}
+		magicToken := base64.RawURLEncoding.EncodeToString(magicRaw)
+		s.demoSessions.Store(magicToken, demoMagicSession{
+			userID:               demoUser.ID,
+			workspaceID:          wsVo.ID,
+			workspaceNamespace:   wsVo.Namespace,
+			workspaceSlug:        wsVo.Slug,
+			workspaceDisplayName: wsVo.DisplayName,
+			expiresAt:            expiresAt,
+		})
+
+		// 7. Build URLs
+		scheme := "https"
+		if c.Request.TLS == nil && c.GetHeader("X-Forwarded-Proto") != "https" {
+			scheme = "http"
+		}
+		host := c.Request.Host
+		if fwdHost := c.GetHeader("X-Forwarded-Host"); fwdHost != "" {
+			host = fwdHost
+		}
+		serverURL := fmt.Sprintf("%s://%s", scheme, host)
+		installURL := fmt.Sprintf("%s/install.sh", serverURL)
+
+		var installCmd string
+		if isCleanRelease(version.Version) {
+			installCmd = fmt.Sprintf(
+				"curl -fsSL %s | bash -s -- --server %s --token %s --tag %s",
+				installURL, serverURL, tokenStr, version.Version,
+			)
+		} else {
+			installCmd = fmt.Sprintf(
+				"curl -fsSL %s | bash -s -- --server %s --token %s",
+				installURL, serverURL, tokenStr,
+			)
+		}
+
+		consoleURL := fmt.Sprintf("%s/auth/demo?token=%s&redirect=/sandbox", serverURL, magicToken)
+
+		resp.OK(c, sandboxLaunchResponse{
+			WorkspaceID: wsVo.ID,
+			ExpiresAt:   expiresAt,
+			ServerURL:   serverURL,
+			Token:       tokenStr,
+			InstallCmd:  installCmd,
 			ConsoleURL:  consoleURL,
 		})
 	}
