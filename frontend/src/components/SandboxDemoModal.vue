@@ -93,10 +93,27 @@ async function launch() {
     if (raw) {
       const cached: SandboxDemoSession = JSON.parse(raw)
       if (new Date(cached.expires_at).getTime() > Date.now()) {
-        session.value = cached
-        state.value = 'ready'
-        startCountdown(cached.expires_at)
-        return
+        // Re-issue a fresh magic token for the existing workspace so the
+        // console_url works even after a server restart (magic tokens are
+        // in-memory and lost on restart).
+        const res = await fetch('/api/v1/demo/sandbox/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace_id: cached.workspace_id }),
+        })
+        if (res.ok) {
+          const body = await res.json()
+          if (body.code === 200 && body.data?.console_url) {
+            const fresh: SandboxDemoSession = { ...cached, console_url: body.data.console_url }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh))
+            session.value = fresh
+            state.value = 'ready'
+            startCountdown(cached.expires_at)
+            return
+          }
+        }
+        // Re-issue failed (workspace deleted/expired) — fall through to create a new session.
+        localStorage.removeItem(STORAGE_KEY)
       }
     }
   } catch { /* ignore */ }

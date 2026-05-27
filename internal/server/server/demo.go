@@ -279,6 +279,24 @@ func (s *Server) handleSandboxDemoLaunch() gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
+
+		// Optional: re-issue a magic token for an existing sandbox demo workspace.
+		// The frontend passes workspace_id when restoring a cached session so that
+		// a fresh console_url is obtained after a server restart (magic tokens are
+		// stored in memory and lost on restart).
+		var req struct {
+			WorkspaceID string `json:"workspace_id"`
+		}
+		_ = c.ShouldBindJSON(&req)
+
+		if req.WorkspaceID != "" {
+			if url, ok := s.reissueSandboxMagicToken(c, ctx, req.WorkspaceID); ok {
+				resp.OK(c, sandboxLaunchResponse{ConsoleURL: url})
+				return
+			}
+			// Workspace gone or expired — fall through to create a fresh session.
+		}
+
 		ttl := time.Duration(cfg.TTLMinutes) * time.Minute
 		expiresAt := time.Now().Add(ttl)
 
@@ -490,6 +508,62 @@ func (s *Server) handleDemoAuth() gin.HandlerFunc {
 			},
 		})
 	}
+}
+
+// reissueSandboxMagicToken issues a fresh magic token for an existing, unexpired sandbox
+// demo workspace. It creates a new temporary demo user, adds them to the workspace, and
+// stores the magic session. Returns the console URL and true on success.
+func (s *Server) reissueSandboxMagicToken(c *gin.Context, ctx context.Context, workspaceID string) (string, bool) {
+	ws, err := s.store.Workspaces().GetByID(ctx, workspaceID)
+	if err != nil || !ws.IsDemo || ws.ExpiresAt == nil || ws.ExpiresAt.Before(time.Now()) {
+		return "", false
+	}
+
+	// Create a new demo user for this workspace.
+	rawBytes := make([]byte, 16)
+	if err = utils.GenerateRandomBytes(rawBytes); err != nil {
+		return "", false
+	}
+	randSuffix := base64.RawURLEncoding.EncodeToString(rawBytes)[:12]
+	demoUsername := fmt.Sprintf("demo-%s", randSuffix)
+	demoPassword := base64.RawURLEncoding.EncodeToString(rawBytes)
+
+	if err = s.userController.Register(ctx, dto.UserDto{Username: demoUsername, Password: demoPassword}); err != nil {
+		return "", false
+	}
+	demoUser, err := s.userController.Login(ctx, demoUsername, demoPassword)
+	if err != nil {
+		return "", false
+	}
+	if err = s.memberController.Add(ctx, ws.ID, demoUser.ID, dto.RoleAdmin); err != nil {
+		return "", false
+	}
+
+	// Issue magic token.
+	magicRaw := make([]byte, 32)
+	if err = utils.GenerateRandomBytes(magicRaw); err != nil {
+		return "", false
+	}
+	magicToken := base64.RawURLEncoding.EncodeToString(magicRaw)
+	s.demoSessions.Store(magicToken, demoMagicSession{
+		userID:               demoUser.ID,
+		workspaceID:          ws.ID,
+		workspaceNamespace:   ws.Namespace,
+		workspaceSlug:        ws.Slug,
+		workspaceDisplayName: ws.DisplayName,
+		expiresAt:            *ws.ExpiresAt,
+	})
+
+	scheme := "https"
+	if c.Request.TLS == nil && c.GetHeader("X-Forwarded-Proto") != "https" {
+		scheme = "http"
+	}
+	host := c.Request.Host
+	if fwdHost := c.GetHeader("X-Forwarded-Host"); fwdHost != "" {
+		host = fwdHost
+	}
+	serverURL := fmt.Sprintf("%s://%s", scheme, host)
+	return fmt.Sprintf("%s/auth/demo?token=%s&redirect=/sandbox", serverURL, magicToken), true
 }
 
 // startDemoCleanup launches a background goroutine that deletes expired demo workspaces every 5 minutes.
