@@ -446,7 +446,7 @@ func (s *Server) handleDemoAuth() gin.HandlerFunc {
 			return
 		}
 
-		val, ok := s.demoSessions.LoadAndDelete(token)
+		val, ok := s.demoSessions.Load(token)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid or expired demo token"})
 			return
@@ -516,7 +516,16 @@ func isCleanRelease(v string) bool {
 }
 
 func (s *Server) sweepExpiredDemos(ctx context.Context) {
-	expired, err := s.store.Workspaces().ListExpiredDemos(ctx, time.Now())
+	// Purge expired magic tokens from the in-memory session map.
+	now := time.Now()
+	s.demoSessions.Range(func(key, value any) bool {
+		if sess, ok := value.(demoMagicSession); ok && now.After(sess.expiresAt) {
+			s.demoSessions.Delete(key)
+		}
+		return true
+	})
+
+	expired, err := s.store.Workspaces().ListExpiredDemos(ctx, now)
 	if err != nil {
 		s.logger.Warn("demo cleanup: list expired demos failed", "err", err)
 		return
