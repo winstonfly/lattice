@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790257771144,
+  "lastUpdate": 1790257795549,
   "repoUrl": "https://github.com/winstonfly/lattice",
   "entries": {
     "Integration Benchmarks": [
@@ -65070,6 +65070,1140 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "1623976 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lauxinchi@gmail.com",
+            "name": "winstonfly",
+            "username": "winstonfly"
+          },
+          "committer": {
+            "email": "lauxinchi@gmail.com",
+            "name": "winstonfly",
+            "username": "winstonfly"
+          },
+          "distinct": true,
+          "id": "bd151981db84f4f15e16dd5ecc5ec5db564e549e",
+          "message": "fix(apple): make the exit node usable on iOS/macOS (delivery, DNS, login, log size)\n\nVerified on an iPhone: with an exit node selected, Chrome reaches Google\nthrough the tunnel (real Google IPs answered, QUIC flowing).\n\n- Downlink delivery: the delivery loop only called writePackets once 64\n  packets had piled up, so a lone reply (SYN-ACK, ping answer) sat in the\n  batch forever and utun saw Ipkts=0. Drain what has arrived with\n  MSG_DONTWAIT, then flush immediately. Data plane between the engine and\n  the app is a SOCK_DGRAM socketpair (message boundaries, no framing) and\n  the engine drops non-overlay packets on the way in (loop artifacts).\n- Exit-mode DNS: matchDomains=nil never made the tunnel resolver the\n  default, so names still went to the carrier DNS and google.com came back\n  as a poisoned Facebook IP. Use matchDomains=[\"\"] with 8.8.8.8/1.1.1.1 as\n  the system resolvers: DNS is then an ordinary UDP 53 packet routed into\n  the tunnel like any other traffic. *.lattice short names do not resolve\n  while an exit node is in use.\n- DNS interception now only answers queries addressed to the tunnel's own\n  10.96.0.1. It used to match on port 53 alone and re-forwarded the\n  forwarder's own upstream queries forever, flooding the tunnel with\n  thousands of packets a second and killing the extension seconds after a\n  global route came up.\n- LatticeAPI: the control plane reports auth failures as HTTP 200 with\n  {\"code\":401} in the body, so the silent re-login (HTTP 401 only) never\n  ran and the home screen showed a bare LatticeAPIError once the token\n  expired. Treat a body code of 401 as unauthorized.\n- Engine log: lattice-ne.log was opened append-only at debug level and\n  reached 190 MB; truncate it at start once it passes 5 MB.\n- Remove the unused packetTUN.upstreamDNSed field (lint).\n\nSigned-off-by: winstonfly <lauxinchi@gmail.com>",
+          "timestamp": "2026-09-24T21:47:31+08:00",
+          "tree_id": "95fc27aa8a59f1183ebe9f09ca647e8ea881b5b8",
+          "url": "https://github.com/winstonfly/lattice/commit/bd151981db84f4f15e16dd5ecc5ec5db564e549e"
+        },
+        "date": 1790257794125,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkEgressFilterCheck/hit",
+            "value": 7.497,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "160267182 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - ns/op",
+            "value": 7.497,
+            "unit": "ns/op",
+            "extra": "160267182 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "160267182 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "160267182 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit",
+            "value": 7.481,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "160288215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - ns/op",
+            "value": 7.481,
+            "unit": "ns/op",
+            "extra": "160288215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "160288215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "160288215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit",
+            "value": 7.478,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "159441932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - ns/op",
+            "value": 7.478,
+            "unit": "ns/op",
+            "extra": "159441932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "159441932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "159441932 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit",
+            "value": 7.515,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "160077306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - ns/op",
+            "value": 7.515,
+            "unit": "ns/op",
+            "extra": "160077306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "160077306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "160077306 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit",
+            "value": 7.504,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "160500692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - ns/op",
+            "value": 7.504,
+            "unit": "ns/op",
+            "extra": "160500692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "160500692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/hit - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "160500692 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss",
+            "value": 57.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "21015595 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - ns/op",
+            "value": 57.06,
+            "unit": "ns/op",
+            "extra": "21015595 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "21015595 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "21015595 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss",
+            "value": 57.08,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "20997914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - ns/op",
+            "value": 57.08,
+            "unit": "ns/op",
+            "extra": "20997914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "20997914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "20997914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss",
+            "value": 57.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "21036534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - ns/op",
+            "value": 57.2,
+            "unit": "ns/op",
+            "extra": "21036534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "21036534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "21036534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss",
+            "value": 57.17,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "21000273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - ns/op",
+            "value": 57.17,
+            "unit": "ns/op",
+            "extra": "21000273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "21000273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "21000273 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss",
+            "value": 57.07,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "21040548 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - ns/op",
+            "value": 57.07,
+            "unit": "ns/op",
+            "extra": "21040548 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "21040548 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEgressFilterCheck/miss - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "21040548 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal",
+            "value": 18.92,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "63603685 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - ns/op",
+            "value": 18.92,
+            "unit": "ns/op",
+            "extra": "63603685 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "63603685 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "63603685 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal",
+            "value": 19.01,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "59215029 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - ns/op",
+            "value": 19.01,
+            "unit": "ns/op",
+            "extra": "59215029 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "59215029 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "59215029 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal",
+            "value": 19.01,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "60553515 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - ns/op",
+            "value": 19.01,
+            "unit": "ns/op",
+            "extra": "60553515 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "60553515 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "60553515 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal",
+            "value": 19.11,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "60570510 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - ns/op",
+            "value": 19.11,
+            "unit": "ns/op",
+            "extra": "60570510 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "60570510 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "60570510 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal",
+            "value": 19.05,
+            "unit": "ns/op\t      16 B/op\t       1 allocs/op",
+            "extra": "61776566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - ns/op",
+            "value": 19.05,
+            "unit": "ns/op",
+            "extra": "61776566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - B/op",
+            "value": 16,
+            "unit": "B/op",
+            "extra": "61776566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Marshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "61776566 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto",
+            "value": 1.252,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "963093471 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - ns/op",
+            "value": 1.252,
+            "unit": "ns/op",
+            "extra": "963093471 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "963093471 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "963093471 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto",
+            "value": 1.247,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "959686328 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - ns/op",
+            "value": 1.247,
+            "unit": "ns/op",
+            "extra": "959686328 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "959686328 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "959686328 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto",
+            "value": 1.251,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "956619055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - ns/op",
+            "value": 1.251,
+            "unit": "ns/op",
+            "extra": "956619055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "956619055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "956619055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto",
+            "value": 1.262,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "959898135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - ns/op",
+            "value": 1.262,
+            "unit": "ns/op",
+            "extra": "959898135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "959898135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "959898135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto",
+            "value": 1.249,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "950721324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - ns/op",
+            "value": 1.249,
+            "unit": "ns/op",
+            "extra": "950721324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "950721324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/MarshalInto - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "950721324 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal",
+            "value": 21.56,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "53583613 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - ns/op",
+            "value": 21.56,
+            "unit": "ns/op",
+            "extra": "53583613 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "53583613 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "53583613 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal",
+            "value": 21.58,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "54644842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - ns/op",
+            "value": 21.58,
+            "unit": "ns/op",
+            "extra": "54644842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "54644842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "54644842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal",
+            "value": 21.5,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "52916776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - ns/op",
+            "value": 21.5,
+            "unit": "ns/op",
+            "extra": "52916776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "52916776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "52916776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal",
+            "value": 21.46,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "53839153 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - ns/op",
+            "value": 21.46,
+            "unit": "ns/op",
+            "extra": "53839153 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "53839153 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "53839153 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal",
+            "value": 21.55,
+            "unit": "ns/op\t      24 B/op\t       1 allocs/op",
+            "extra": "53934862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - ns/op",
+            "value": 21.55,
+            "unit": "ns/op",
+            "extra": "53934862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - B/op",
+            "value": 24,
+            "unit": "B/op",
+            "extra": "53934862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRPFrameEncode/Unmarshal - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "53934862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN",
+            "value": 0.3151,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - ns/op",
+            "value": 0.3151,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN",
+            "value": 0.3121,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - ns/op",
+            "value": 0.3121,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN",
+            "value": 0.3139,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - ns/op",
+            "value": 0.3139,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN",
+            "value": 0.3128,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - ns/op",
+            "value": 0.3128,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN",
+            "value": 0.315,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - ns/op",
+            "value": 0.315,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/STUN - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard",
+            "value": 0.3134,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - ns/op",
+            "value": 0.3134,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard",
+            "value": 0.3128,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - ns/op",
+            "value": 0.3128,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard",
+            "value": 0.3125,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - ns/op",
+            "value": 0.3125,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard",
+            "value": 0.3165,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - ns/op",
+            "value": 0.3165,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard",
+            "value": 0.3128,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - ns/op",
+            "value": 0.3128,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFilteringUDPMux/WireGuard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner",
+            "value": 129066,
+            "unit": "ns/op\t  105621 B/op\t    1700 allocs/op",
+            "extra": "8025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - ns/op",
+            "value": 129066,
+            "unit": "ns/op",
+            "extra": "8025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - B/op",
+            "value": 105621,
+            "unit": "B/op",
+            "extra": "8025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - allocs/op",
+            "value": 1700,
+            "unit": "allocs/op",
+            "extra": "8025 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner",
+            "value": 128537,
+            "unit": "ns/op\t  105621 B/op\t    1700 allocs/op",
+            "extra": "8378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - ns/op",
+            "value": 128537,
+            "unit": "ns/op",
+            "extra": "8378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - B/op",
+            "value": 105621,
+            "unit": "B/op",
+            "extra": "8378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - allocs/op",
+            "value": 1700,
+            "unit": "allocs/op",
+            "extra": "8378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner",
+            "value": 131182,
+            "unit": "ns/op\t  105621 B/op\t    1700 allocs/op",
+            "extra": "8174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - ns/op",
+            "value": 131182,
+            "unit": "ns/op",
+            "extra": "8174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - B/op",
+            "value": 105621,
+            "unit": "B/op",
+            "extra": "8174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - allocs/op",
+            "value": 1700,
+            "unit": "allocs/op",
+            "extra": "8174 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner",
+            "value": 128811,
+            "unit": "ns/op\t  105620 B/op\t    1700 allocs/op",
+            "extra": "9082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - ns/op",
+            "value": 128811,
+            "unit": "ns/op",
+            "extra": "9082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - B/op",
+            "value": 105620,
+            "unit": "B/op",
+            "extra": "9082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - allocs/op",
+            "value": 1700,
+            "unit": "allocs/op",
+            "extra": "9082 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner",
+            "value": 129624,
+            "unit": "ns/op\t  105621 B/op\t    1700 allocs/op",
+            "extra": "8436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - ns/op",
+            "value": 129624,
+            "unit": "ns/op",
+            "extra": "8436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - B/op",
+            "value": 105621,
+            "unit": "B/op",
+            "extra": "8436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSandboxProvisioner - allocs/op",
+            "value": 1700,
+            "unit": "allocs/op",
+            "extra": "8436 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt",
+            "value": 728.5,
+            "unit": "ns/op\t2058.99 MB/s\t       0 B/op\t       0 allocs/op",
+            "extra": "1647456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - ns/op",
+            "value": 728.5,
+            "unit": "ns/op",
+            "extra": "1647456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - MB/s",
+            "value": 2058.99,
+            "unit": "MB/s",
+            "extra": "1647456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1647456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1647456 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt",
+            "value": 729.1,
+            "unit": "ns/op\t2057.39 MB/s\t       0 B/op\t       0 allocs/op",
+            "extra": "1649547 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - ns/op",
+            "value": 729.1,
+            "unit": "ns/op",
+            "extra": "1649547 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - MB/s",
+            "value": 2057.39,
+            "unit": "MB/s",
+            "extra": "1649547 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1649547 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1649547 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt",
+            "value": 728.9,
+            "unit": "ns/op\t2057.96 MB/s\t       0 B/op\t       0 allocs/op",
+            "extra": "1649052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - ns/op",
+            "value": 728.9,
+            "unit": "ns/op",
+            "extra": "1649052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - MB/s",
+            "value": 2057.96,
+            "unit": "MB/s",
+            "extra": "1649052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1649052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1649052 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt",
+            "value": 727.4,
+            "unit": "ns/op\t2062.00 MB/s\t       0 B/op\t       0 allocs/op",
+            "extra": "1649070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - ns/op",
+            "value": 727.4,
+            "unit": "ns/op",
+            "extra": "1649070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - MB/s",
+            "value": 2062,
+            "unit": "MB/s",
+            "extra": "1649070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1649070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1649070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt",
+            "value": 727.7,
+            "unit": "ns/op\t2061.26 MB/s\t       0 B/op\t       0 allocs/op",
+            "extra": "1646169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - ns/op",
+            "value": 727.7,
+            "unit": "ns/op",
+            "extra": "1646169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - MB/s",
+            "value": 2061.26,
+            "unit": "MB/s",
+            "extra": "1646169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1646169 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkWireGuardEncrypt - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1646169 times\n4 procs"
           }
         ]
       }
